@@ -10,6 +10,7 @@ class Store(Resource):
         return {'message': 'Store Not Found'}, 400
 
     @classmethod
+    @fresh_jwt_required
     def post(cls, name):
         if StoreModel.find_by_name(name):
             return {'message': "A store with name '{}' already exists!".format(name)}, 400
@@ -23,6 +24,7 @@ class Store(Resource):
         return store.json(), 201
 
     @classmethod
+    @jwt_required
     def delete(cls, name):
         store = StoreModel.find_by_name(name)
         if store:
