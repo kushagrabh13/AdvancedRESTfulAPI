@@ -1,5 +1,5 @@
 from flask_restful import Resource, reqparse
-from flask_jwt import jwt_required, fresh_jwt_required
+from flask_jwt_extended import jwt_required, fresh_jwt_required
 from models.item import ItemModel
 
 BLANK_ERROR = "'{}' cannot be left blank!"
@@ -10,13 +10,13 @@ class Item(Resource):
     parser.add_argument('price',
             type=float,
             required=True,
-            help='BLANK_ERROR.format('Price')'
+            help=BLANK_ERROR.format("Price")
             )
 
     parser.add_argument('store_id',
             type=int,
             required=True,
-            help='BLANK_ERROR.format('StoreID')'
+            help=BLANK_ERROR.format("StoreID")
             )
 
     @classmethod

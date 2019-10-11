@@ -3,7 +3,7 @@ from flask_restful import Api
 from flask_jwt_extended import JWTManager
 
 from blacklist import BLACKLIST
-from resources.user import UserRegister
+from resources.user import User,UserRegister, UserLogin, UserLogout, TokenRefresh
 from resources.item import Item, ItemList
 from resources.store import Store, StoreList
 
@@ -25,7 +25,7 @@ api = Api(app)
 def create_tables():
     db.create_all()
 
-jwt = JWTManager(app, authenticate, identity)
+jwt = JWTManager(app)
 
 @jwt.token_in_blacklist_loader
 def check_if_token_in_blacklist_loader(decryted_token):
@@ -45,4 +45,4 @@ api.add_resource(UserLogout, '/logout')
 if __name__ == "__main__":
     from db import db
     db.init_app(app)
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=True)

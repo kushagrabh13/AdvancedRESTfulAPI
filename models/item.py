@@ -1,7 +1,7 @@
 from typing import Dict, List, Union
 from db import db
 
-ItenJSON = Dict[str, Union[int, str, float]]
+ItemJSON = Dict[str, Union[int, str, float]]
 
 class ItemModel(db.Model):
     __tablename__ = 'items'

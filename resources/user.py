@@ -5,7 +5,7 @@ from flask_jwt_extended import (
         create_refresh_token,
         jwt_refresh_token_required,
         get_jwt_identity,
-        jet_required,
+        jwt_required,
         get_raw_jwt
 )
 
@@ -20,13 +20,13 @@ _user_parser = reqparse.RequestParser()
 _user_parser.add_argument('username',
     type=str,
     required=True,
-    help='BLANK_ERROR.format('Username')'
+    help=BLANK_ERROR.format('Username')
 )
 
 _user_parser.add_argument('password',
     type=str,
     required=True,
-    help='BLANK_ERROR.format('Password')'
+    help=BLANK_ERROR.format('Password')
 )
 
 class UserRegister(Resource):
@@ -54,7 +54,7 @@ class User(Resource):
     def delete(cls, user_id: int):
         user = UserModel.find_by_id(user_id)
         if not user:
-            returm {"message": "User Not Found"}, 404
+            return {"message": "User Not Found"}, 404
         user.delete_from_db()
         return {"message": "User Deleted!"}, 200
 
@@ -62,7 +62,7 @@ class UserLogin(Resource):
     def post(self):
         data = _user_parser.parse_args()
 
-        user = UserModel.find_by_username(data["Username"])
+        user = UserModel.find_by_username(data["username"])
 
         if user and safe_str_cmp(user.password, data["password"]):
             access_token = create_access_token(identity=user.id, fresh=True)

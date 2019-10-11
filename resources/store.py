@@ -1,6 +1,6 @@
 from flask_restful import Resource
 from models.store import StoreModel
-
+from flask_jwt_extended import jwt_required, fresh_jwt_required
 class Store(Resource):
     @classmethod
     def get(cls, name):
