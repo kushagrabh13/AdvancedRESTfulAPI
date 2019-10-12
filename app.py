@@ -9,7 +9,10 @@ from resources.store import Store, StoreList
 
 import os
 
+
 app = Flask(__name__)
+
+app.config['DEBUG'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL','sqlite:///data.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PROPAGATE_EXCEPTIONS'] = True
@@ -20,10 +23,6 @@ app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = [
 ] #allow blacklisting for access and refresh tokens
 app.secret_key = 'doe' # can be used as app.config['JWT_SECRET_KEY']
 api = Api(app)
-
-@app.before_first_request
-def create_tables():
-    db.create_all()
 
 jwt = JWTManager(app)
 
@@ -45,4 +44,11 @@ api.add_resource(UserLogout, '/logout')
 if __name__ == "__main__":
     from db import db
     db.init_app(app)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    
+    if app.config['DEBUG']:
+    	@app.before_first_request
+    	def create_tables():
+    	    db.create_all()
+
+    app.run(host='0.0.0.0')
+
