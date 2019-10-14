@@ -1,29 +1,18 @@
 from flask_restful import Resource, reqparse
+from flask import request
 from flask_jwt_extended import jwt_required, fresh_jwt_required
 from models.item import ItemModel
+from schemas.item import ItemSchema
 
-BLANK_ERROR = "'{}' cannot be left blank!"
+itemSchema = ItemSchema()
+itemListSchema = ItemSchema(many=True)
 
 class Item(Resource):
-    parser = reqparse.RequestParser()
-    
-    parser.add_argument('price',
-            type=float,
-            required=True,
-            help=BLANK_ERROR.format("Price")
-            )
-
-    parser.add_argument('store_id',
-            type=int,
-            required=True,
-            help=BLANK_ERROR.format("StoreID")
-            )
-
     @classmethod
     def get(cls, name):
         item = ItemModel.find_by_name(name)
         if item:
-            return item.json()
+            return itemSchema.dump(item)
 
         return {'message': 'Item Not Found.'}, 404
 
@@ -33,16 +22,17 @@ class Item(Resource):
         if ItemModel.find_by_name(name):
             return {'message': "An item with name '{}' already exists!"}, 400
 
-        data = Item.parser.parse_args()
+        itemJSON = request.get_json()
+        itemJSON["name"] = name
 
-        item = ItemModel(name, **data)
+        item = itemSchema.load(itemJSON)
 
         try:
             item.save_to_db()
         except:
             return {'message': 'An error occured while inserting the item'}, 500
 
-        return item.json(), 201
+        return itemSchema.dump(item), 201
 
     @classmethod
     @jwt_required
@@ -56,20 +46,20 @@ class Item(Resource):
     @classmethod
     @jwt_required
     def put(cls, name):
-        data = Item.parser.parse_args()
-
+        itemJSON = request.get_json()
         item = ItemModel.find_by_name(name)
 
         if item:
-            item.price = data['price']
+            item.price = itemJSON['price']
         else:
-            item = ItemModel(name, **data)
+            itemJSON["name"] = name
+            item = itemSchema.load(itemJSON)
 
         item.save_to_db()
 
-        return item.json(), 200
+        return itemSchema.dump(item), 200
 
 class ItemList(Resource):
     @classmethod
     def get(cls):
-        return {'items': list(map(lambda x: x.json(), ItemModel.query.all()))}
+        return {'items': itemListSchema.dump(ItemModel.find_all())}, 200

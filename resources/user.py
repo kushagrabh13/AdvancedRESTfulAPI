@@ -1,4 +1,5 @@
-from flask_restful import Resource, reqparse
+from flask_restful import Resource
+from flask import request
 from werkzeug.security import safe_str_cmp
 from flask_jwt_extended import (
         create_access_token,
@@ -10,29 +11,16 @@ from flask_jwt_extended import (
 )
 
 from models.user import UserModel
+from schemas.user import UserSchema
 from blacklist import BLACKLIST
 
-
-BLANK_ERROR = "'{}' cannot be left blank!"
-
-_user_parser = reqparse.RequestParser()
-    
-_user_parser.add_argument('username',
-    type=str,
-    required=True,
-    help=BLANK_ERROR.format('Username')
-)
-
-_user_parser.add_argument('password',
-    type=str,
-    required=True,
-    help=BLANK_ERROR.format('Password')
-)
+userSchema = UserSchema()
 
 class UserRegister(Resource):
     @classmethod
     def post(cls):
-        data = UserRegister.parser.parse_args()
+        userJSON = request.get_json()
+        user = userSchema.load(userJSON)
 
         if UserModel.find_by_username(data['username']):
             return {'message': 'A user with that username already exists'}, 400
@@ -48,7 +36,7 @@ class User(Resource):
         user = UserModel.find_by_id(user_id)
         if not user:
             return {"message": "User Not Found"}, 404
-        return user.json(), 200
+        return userSchema.dump(user), 200
 
     @classmethod
     def delete(cls, user_id: int):
@@ -60,11 +48,12 @@ class User(Resource):
 
 class UserLogin(Resource):
     def post(self):
-        data = _user_parser.parse_args()
+        userJSON = request.get_json()
+        userData = userSchema.load(userJSON)
 
-        user = UserModel.find_by_username(data["username"])
+        user = UserModel.find_by_username(userData.username)
 
-        if user and safe_str_cmp(user.password, data["password"]):
+        if user and safe_str_cmp(userData.password, user.password):
             access_token = create_access_token(identity=user.id, fresh=True)
             refresh_token = create_refresh_token(user.id)
             return {"access_token" : access_token, "refresh_token": refresh_token}, 200
