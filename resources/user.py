@@ -1,5 +1,5 @@
 from flask_restful import Resource
-from flask import request
+from flask import request, make_response, render_template
 from werkzeug.security import safe_str_cmp
 from flask_jwt_extended import (
         create_access_token,
@@ -10,7 +10,7 @@ from flask_jwt_extended import (
         get_raw_jwt
 )
 
-from models.user import UserModel
+from models.user import UserModel, MailGunException
 from schemas.user import UserSchema
 from blacklist import BLACKLIST
 
@@ -20,13 +20,23 @@ class UserRegister(Resource):
     @classmethod
     def post(cls):
         userJSON = request.get_json()
-        user = userSchema.load(userJSON)
+        user = userSchema.load(userJSON, partial=("email", ))
 
-        if UserModel.find_by_username(data['username']):
+        if UserModel.find_by_username(user.username):
             return {'message': 'A user with that username already exists'}, 400
 
-        user = UserModel(data['username'], data['password'])
-        user.save_to_db()
+        if UserModel.find_by_email(user.email):
+            return {'message': 'A user with that email already exists'}, 400
+
+        try:
+            user.save_to_db()
+            user.send_confirmation_email()
+        except MailGunException as e:
+            user.delete_from_db()
+            return {"message": str(e)}, 500
+        except Exception as e:
+            print(e)
+            return {"message": "Failed to create user"}, 500
 
         return {'message': 'User created successfully.'}, 201
 
@@ -49,14 +59,16 @@ class User(Resource):
 class UserLogin(Resource):
     def post(self):
         userJSON = request.get_json()
-        userData = userSchema.load(userJSON)
+        userData = userSchema.load(userJSON, partial=("email",))
 
         user = UserModel.find_by_username(userData.username)
 
         if user and safe_str_cmp(userData.password, user.password):
-            access_token = create_access_token(identity=user.id, fresh=True)
-            refresh_token = create_refresh_token(user.id)
-            return {"access_token" : access_token, "refresh_token": refresh_token}, 200
+            if user.activated:
+                access_token = create_access_token(identity=user.id, fresh=True)
+                refresh_token = create_refresh_token(user.id)
+                return {"access_token" : access_token, "refresh_token": refresh_token}, 200
+            return {"message": "Account not confirmed. Please check your email"}
 
         return {"message": "Invalid Credentials!"}, 401
 
@@ -74,3 +86,14 @@ class TokenRefresh(Resource):
         current_user = get_jwt_identity()
         new_token = create_access_token(identity=current_user, fresh=False)
         return {"access_token": new_token}, 200
+
+class UserConfirm(Resource):
+    @classmethod
+    def get(cls, user_id: int):
+        user = UserModel.find_by_id(user_id)
+        if not user:
+            return {"message": "User Not Found"}, 404
+        user.activated = True
+        user.save_to_db()
+        headers = {"Content-Type": "text/html"}
+        return make_response(render_template("confirmation_page.html", email=user.username), 200, headers)
