@@ -60,3 +60,33 @@ class Image(Resource):
         except Exception as e:
             print(e)
             return {"message": "Image delete failed."}, 500
+
+class AvatarUpload(Resource):
+    @jwt_required
+    def put(self):
+        """
+        Used to upload a user's Avatar.
+        All Avatars are named after the user's ID, example: user_{id}.{ext}.
+        Uploading a new Avatar overwrites the existing one.
+        """
+        data = imageSchema.load(request.files)
+        filename = f"user_{get_jwt_identity()}"
+        folder = "avatars"
+        avatar_path = image_helper.find_image_any_format(filename, folder)
+        if avatar_path:
+            try:
+                os.remove(avatar_path)
+            except:
+                return {"message": "Avatar Delete Failed."}, 500
+
+        try:
+            ext = image_helper.get_extension(data["image"].filename)
+            avatar = filename + ext
+            avatar_path = image_helper.save_image(
+                data["image"], folder=folder, name=avatar
+            )
+            basename = image_helper.get_basename(avatar_path)
+            return {"message": f"Avatar '{basename}' uploaded."}, 200
+        except UploadNotAllowed:
+            extension = image_helper.get_extension(data['image'])
+            return {"message": f"Extension '{extension}' is not allowed."}, 400
