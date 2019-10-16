@@ -34,7 +34,7 @@ class UserModel(db.Model):
         subject = "Registration Confirmation"
         link = request.url_root[:-1] + url_for(
             "confirmation",
-            conformation_id=self.most_recent_confirmation.id
+            confirmation_id=self.most_recent_confirmation.id
         )
         text = f"Please click the link to confirm your registration: {link}"
         html = f"<html>Please click the link to confirm your registration: <a href={link}>link</a></html>"

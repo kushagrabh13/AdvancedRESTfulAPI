@@ -22,7 +22,7 @@ class UserRegister(Resource):
     @classmethod
     def post(cls):
         userJSON = request.get_json()
-        user = userSchema.load(userJSON, partial=("email", ))
+        user = userSchema.load(userJSON)
 
         if UserModel.find_by_username(user.username):
             return {'message': 'A user with that username already exists'}, 400
