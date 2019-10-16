@@ -3,6 +3,7 @@ from flask import Flask, jsonify
 from flask_restful import Api
 from flask_jwt_extended import JWTManager
 from marshmallow import ValidationError
+from dotenv import load_dotenv
 
 from marsh import io
 from blacklist import BLACKLIST
@@ -14,16 +15,10 @@ from resources.confirmation import Confirmation, ConfirmationByUser
 
 app = Flask(__name__)
 
-app.config['DEBUG'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', None)
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['PROPAGATE_EXCEPTIONS'] = True
-app.config['JWT_BLACKLIST_ENABLED'] = True #Enable Blacklist Feature
-app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = [
-	"access",
-	"refresh"
-] #allow blacklisting for access and refresh tokens
-app.secret_key = os.environ.get('APP_SECRET_KEY') # can be used as app.config['JWT_SECRET_KEY']
+load_dotenv('.env', verbose=True)
+app.config.from_object("default_config")
+app.config.from_envvar("APPLICATION_SETTINGS")
+
 api = Api(app)
 
 jwt = JWTManager(app)
