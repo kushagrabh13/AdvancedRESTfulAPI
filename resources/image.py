@@ -10,8 +10,9 @@ from schemas.image import ImageSchema
 imageSchema = ImageSchema()
 
 class ImageUpload(Resource):
+    @classmethod
     @jwt_required
-    def post(self):
+    def post(cls):
         """
         Used to upload an image file.
         It uses JWT to retrieve user information and then saves the image to the user's folder.
@@ -29,8 +30,9 @@ class ImageUpload(Resource):
             return {"message": f"Extension '{extension}' is not allowed."}, 400
 
 class Image(Resource):
+    @classmethod
     @jwt_required
-    def get(self, filename: str):
+    def get(cls, filename: str):
         """
         Returns the requested image if it exists.
         Looks up inside the logged in user's folder.
@@ -45,8 +47,9 @@ class Image(Resource):
         except FileNotFoundError:
             return {"message": "Image Not Found"}, 404
 
+    @classmethod
     @jwt_required
-    def delete(self, filename: str):
+    def delete(cls, filename: str):
         user_id = get_jwt_identity()
         folder = f"user_{user_id}"
 
@@ -62,8 +65,9 @@ class Image(Resource):
             return {"message": "Image delete failed."}, 500
 
 class AvatarUpload(Resource):
+    @classmethod
     @jwt_required
-    def put(self):
+    def put(cls):
         """
         Used to upload a user's Avatar.
         All Avatars are named after the user's ID, example: user_{id}.{ext}.
@@ -90,3 +94,14 @@ class AvatarUpload(Resource):
         except UploadNotAllowed:
             extension = image_helper.get_extension(data['image'])
             return {"message": f"Extension '{extension}' is not allowed."}, 400
+
+class Avatar(Resource):
+    @classmethod
+    def get(cls, user_id: int):
+        folder = "avatars"
+        filename = f"user_{user_id}"
+        avatar = image_helper.find_image_any_format(filename, folder)
+        if avatar:
+            return send_file(avatar)
+        return {"message": f"Avatar '{avatar}' Not Found."}, 404
+
