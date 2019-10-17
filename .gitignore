@@ -1,4 +1,4 @@
 __pycache__
+.env
 data.db
 .idea
-.env
