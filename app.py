@@ -33,7 +33,7 @@ def handle_marshmallow_validation(err):
 
 @jwt.token_in_blacklist_loader
 def check_if_token_in_blacklist_loader(decrypted_token):
-	return decrypted_token['jti'] in BLACKLIST
+    return decrypted_token['jti'] in BLACKLIST
 
 
 api.add_resource(Store, '/store/<string:name>')

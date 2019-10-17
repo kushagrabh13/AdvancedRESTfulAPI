@@ -15,6 +15,13 @@ from schemas.user import UserSchema
 from blacklist import BLACKLIST
 from libs.mailgun import MailGunException
 from models.confirmation import ConfirmationModel
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(
+    schemes=["pbkdf2_sha256"],
+    default="pbkdf2_sha256",
+    pbkdf2_sha256__default_rounds=30000
+)
 
 userSchema = UserSchema()
 
@@ -22,6 +29,7 @@ class UserRegister(Resource):
     @classmethod
     def post(cls):
         userJSON = request.get_json()
+        userJSON["password"] = pwd_context.encrypt(userJSON["password"])
         user = userSchema.load(userJSON)
 
         if UserModel.find_by_username(user.username):
@@ -68,7 +76,7 @@ class UserLogin(Resource):
 
         user = UserModel.find_by_username(userData.username)
 
-        if user and safe_str_cmp(userData.password, user.password):
+        if user and pwd_context.verify(userData.password, user.password):
             confirmation = user.most_recent_confirmation
             if confirmation and confirmation.confirmed:
                 access_token = create_access_token(identity=user.id, fresh=True)
