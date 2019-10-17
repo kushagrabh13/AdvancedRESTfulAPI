@@ -15,7 +15,7 @@ class Store(Resource):
         return {'message': 'Store Not Found'}, 404
 
     @classmethod
-    @fresh_jwt_required
+    @jwt_required
     def post(cls, name):
         if StoreModel.find_by_name(name):
             return {'message': "A store with name '{}' already exists!".format(name)}, 400
