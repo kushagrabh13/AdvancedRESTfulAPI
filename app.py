@@ -1,4 +1,3 @@
-import os
 from flask import Flask, jsonify
 from flask_restful import Api
 from flask_jwt_extended import JWTManager
@@ -6,18 +5,21 @@ from flask_uploads import configure_uploads, patch_request_class
 from marshmallow import ValidationError
 from dotenv import load_dotenv
 
+load_dotenv('.env', verbose=True)
+
 from marsh import io
 from blacklist import BLACKLIST
-from resources.user import User,UserRegister, UserLogin, UserLogout, TokenRefresh
+from resources.user import User,UserRegister, UserLogin, UserLogout, TokenRefresh, UserList
+from resources.github_login import GithubLogin, GithubAuthorize
 from resources.item import Item, ItemList
 from resources.store import Store, StoreList
 from resources.confirmation import Confirmation, ConfirmationByUser
 from resources.image import ImageUpload, Image, AvatarUpload, Avatar
 from libs.image_helper import IMAGE_SET
+from oauth import oauth
 
 app = Flask(__name__)
 
-load_dotenv('.env', verbose=True)
 app.config.from_object("default_config")
 app.config.from_envvar("APPLICATION_SETTINGS")
 patch_request_class(app, 10 * 1024 * 1024) # 10MB Max Upload Size
@@ -51,12 +53,16 @@ api.add_resource(ImageUpload, '/upload/image')
 api.add_resource(Image, '/image/<string:filename>')
 api.add_resource(AvatarUpload, '/upload/avatar')
 api.add_resource(Avatar, '/avatar/<int:user_id>')
+api.add_resource(GithubLogin, '/login/github')
+api.add_resource(GithubAuthorize, '/login/github/authorized', endpoint="github.authorize")
+api.add_resource(UserList, '/users')
 
 if __name__ == "__main__":
     from db import db
     db.init_app(app)
     io.init_app(app)
-    
+    oauth.init_app(app)
+
     if app.config['DEBUG']:
         @app.before_first_request
         def create_tables():

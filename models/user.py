@@ -1,5 +1,7 @@
 from requests import Response
 from flask import request, url_for
+from typing import List
+
 from db import db
 from libs.mailgun import MailGun
 from models.confirmation import ConfirmationModel
@@ -9,8 +11,8 @@ class UserModel(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), nullable=False, unique=True)
-    password = db.Column(db.String(), nullable=False)
-    email = db.Column(db.String(80), nullable=False, unique=True)
+    password = db.Column(db.String())
+    email = db.Column(db.String(80), unique=True)
 
     confirmation = db.relationship("ConfirmationModel", lazy="dynamic", cascade="all, delete-orphan")
 
@@ -29,6 +31,10 @@ class UserModel(db.Model):
     @classmethod
     def find_by_email(cls, email: str) -> "UserModel":
         return cls.query.filter_by(email = email).first()
+
+    @classmethod
+    def find_all(cls) -> List["UserModel"]:
+        return cls.query.all()
 
     def send_confirmation_email(self) -> Response:
         subject = "Registration Confirmation"

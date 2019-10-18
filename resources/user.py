@@ -24,13 +24,14 @@ pwd_context = CryptContext(
 )
 
 userSchema = UserSchema()
+UserListSchema = UserSchema(many=True)
 
 class UserRegister(Resource):
     @classmethod
     def post(cls):
         userJSON = request.get_json()
         userJSON["password"] = pwd_context.encrypt(userJSON["password"])
-        user = userSchema.load(userJSON)
+        user = userSchema.load(userJSON,  partial=("email",))
 
         if UserModel.find_by_username(user.username):
             return {'message': 'A user with that username already exists'}, 400
@@ -76,7 +77,7 @@ class UserLogin(Resource):
 
         user = UserModel.find_by_username(userData.username)
 
-        if user and pwd_context.verify(userData.password, user.password):
+        if user and user.password and pwd_context.verify(userData.password, user.password):
             confirmation = user.most_recent_confirmation
             if confirmation and confirmation.confirmed:
                 access_token = create_access_token(identity=user.id, fresh=True)
@@ -100,3 +101,25 @@ class TokenRefresh(Resource):
         current_user = get_jwt_identity()
         new_token = create_access_token(identity=current_user, fresh=False)
         return {"access_token": new_token}, 200
+
+class SetPassword(Resource):
+    @classmethod
+    @jwt_required
+    def post(cls):
+        userJSON = request.get_json()
+        userJSON["password"] = pwd_context.encrypt(userJSON["password"])
+        userData = userSchema.load(userJSON)
+        user = UserModel.find_by_username(userData.username)
+
+        if not user:
+            return {"message": "User Not Found."}, 404
+
+        user.password = userData.password
+        user.save_to_db()
+
+        return {"message": "Password Updated"}, 201
+
+class UserList(Resource):
+    @classmethod
+    def get(cls):
+        return {'users': UserListSchema.dump(UserModel.find_all())}, 200
